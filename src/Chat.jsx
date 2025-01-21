@@ -59,7 +59,8 @@ const Chat = () => {
               className="flex items-center gap-2 border-b border-gray-100 py-2"
             >
               <Avatar userId={userId} username={onlinePeople[userId]} />
-              <span>{onlinePeople[userId]}</span>
+              {/* <div className="w-8 h-8 opacity-60 text-center rounded-full bg-yellow-200">t</div> */}
+              <span className="text-slate-600">{onlinePeople[userId]}</span>
             </div>
           );
         })}
