@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Avatar from "./components/Avatar";
+import { UserContext } from "./UserContext";
 const Chat = () => {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const { username, id } = useContext(UserContext);
+
   useEffect(() => {
     const newWs = new WebSocket("ws://localhost:4000");
     setWs(newWs);
@@ -24,16 +30,40 @@ const Chat = () => {
     // whenever the client connect to the ws server,
     // they would receive an array of online users
     // then we need to display it
+    console.log("message data", messageData);
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
+    } else if ("text" in messageData) {
+      setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
+
+  const onlinePeopleExcludeCurUser = { ...onlinePeople };
+  delete onlinePeopleExcludeCurUser[id];
+
+  function sendMessage(ev) {
+    ev.preventDefault();
+    ws.send(
+      JSON.stringify({
+        message: {
+          recipient: selectedUserId,
+          text: newMessage,
+        },
+      })
+    );
+    setNewMessage("");
+    setMessages((prev) => [
+      ...prev,
+      { text: newMessage, recipient: selectedUserId, sender: id },
+    ]);
+  }
+
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <div className="bg-white w-1/3 py-2 px-4">
+      <div className="bg-white w-1/3">
         {/* Logo in the sidebar */}
-        <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center">
+        <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center p-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -52,45 +82,95 @@ const Chat = () => {
         </div>
 
         {/* Display the list of online people */}
-        {Object.keys(onlinePeople).map((userId) => {
+        {Object.keys(onlinePeopleExcludeCurUser).map((userId) => {
           return (
             <div
               key={userId}
-              className="flex items-center gap-2 border-b border-gray-100 py-2"
+              className={
+                "flex items-center gap-2 border-b border-gray-100 cursor-pointer " +
+                (userId === selectedUserId ? "bg-green-100" : "")
+              }
+              onClick={() => setSelectedUserId(userId)}
             >
-              <Avatar userId={userId} username={onlinePeople[userId]} />
-              {/* <div className="w-8 h-8 opacity-60 text-center rounded-full bg-yellow-200">t</div> */}
-              <span className="text-slate-600">{onlinePeople[userId]}</span>
+              {/* The online vertical bar */}
+              {userId === selectedUserId && (
+                <div className="w-1 h-12 bg-green-400 rounded-r-md"></div>
+              )}
+              <div className="flex pl-4 gap-2 py-2 items-center">
+                <Avatar userId={userId} username={onlinePeople[userId]} />
+                {/* <div className="w-8 h-8 opacity-60 text-center rounded-full bg-green-200">t</div> */}
+                <span className="text-slate-600">{onlinePeople[userId]}</span>
+              </div>
             </div>
           );
         })}
       </div>
 
       <div className="bg-blue-100 w-2/3 p-2 flex flex-col">
-        <div className="flex-grow">Messages</div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="bg-white rounded-sm outline-none p-2 flex-grow"
-            placeholder="Type message"
-          />
-          <button className="bg-blue-500 rounded-sm text-white p-2 outline-slate-300">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-              />
-            </svg>
-          </button>
+        <div className="flex-grow">
+          {!selectedUserId && (
+            <div className="text-gray-400 text-xl h-full flex items-center justify-center">
+              &larr; Select a person to chat
+            </div>
+          )}
+
+          {/* display messages */}
+          {!!selectedUserId && (
+            // wrapper of the scroller
+            <div className="relative h-full">
+              <div className="overflow-y-scroll absolute inset-0 bottom-2">
+                {messages.map((m) => (
+                  <div className={m.sender === id ? "text-right" : "text-left"}>
+                    <div
+                      className={
+                        "p-2 my-2 inline-block text-left rounded-md " +
+                        (m.sender === id
+                          ? "bg-blue-400 text-white"
+                          : "bg-white")
+                      }
+                    >
+                      {m.text} <br />
+                      {m.sender} <br />
+                      {m.recipient}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* New message input field */}
+        {!!selectedUserId && (
+          <form className="flex gap-2" onSubmit={sendMessage}>
+            <input
+              value={newMessage}
+              onChange={(ev) => setNewMessage(ev.target.value)}
+              type="text"
+              className="bg-white rounded-sm outline-none p-2 flex-grow"
+              placeholder="Type message"
+            />
+            <button
+              type="submit"
+              className="bg-blue-500 rounded-sm text-white p-2 outline-slate-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+                />
+              </svg>
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
