@@ -162,7 +162,7 @@ const Chat = () => {
           {!!selectedUserId && (
             // wrapper of the scroller
             <div className="relative h-full">
-              <div className="overflow-y-scroll absolute inset-0 bottom-2">
+              <div className="overflow-y-scroll absolute inset-0 bottom-2 pr-2">
                 {messages.map((m) => (
                   <div
                     key={m._id}
