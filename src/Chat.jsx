@@ -1,6 +1,8 @@
 import { useContext, useEffect, useState } from "react";
 import Avatar from "./components/Avatar";
 import { UserContext } from "./UserContext";
+import axios from "axios";
+
 const Chat = () => {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
@@ -10,10 +12,15 @@ const Chat = () => {
   const { username, id } = useContext(UserContext);
 
   useEffect(() => {
+    connectToWs();
+  }, []);
+
+  function connectToWs() {
     const newWs = new WebSocket("ws://localhost:4000");
     setWs(newWs);
     newWs.addEventListener("message", handleMessage);
-  }, []);
+    newWs.addEventListener("close", () => connectToWs());
+  }
 
   function showOnlinePeople(peopleArray) {
     const people = {};
@@ -43,6 +50,8 @@ const Chat = () => {
 
   function sendMessage(ev) {
     ev.preventDefault();
+
+    // send to ws server
     ws.send(
       JSON.stringify({
         message: {
@@ -52,11 +61,20 @@ const Chat = () => {
       })
     );
     setNewMessage("");
+
+    // add to current messages state 
     setMessages((prev) => [
       ...prev,
       { text: newMessage, recipient: selectedUserId, sender: id },
     ]);
   }
+
+  // Load message with selected user
+  useEffect(() => {
+    if (selectedUserId) {
+      axios.get("/messages/" + selectedUserId)
+    }
+  }, [selectedUserId])
 
   return (
     <div className="flex h-screen">
