@@ -19,7 +19,12 @@ const Chat = () => {
     const newWs = new WebSocket("ws://localhost:4000");
     setWs(newWs);
     newWs.addEventListener("message", handleMessage);
-    newWs.addEventListener("close", () => connectToWs());
+    newWs.addEventListener("close", () => {
+      setTimeout(() => {
+        console.log("Disconnected. Trying to reconnect to ws...");
+        connectToWs();
+      }, 2000);
+    });
   }
 
   function showOnlinePeople(peopleArray) {
@@ -62,24 +67,31 @@ const Chat = () => {
     );
     setNewMessage("");
 
-    // add to current messages state 
+    // add to current messages state
     setMessages((prev) => [
       ...prev,
-      { text: newMessage, recipient: selectedUserId, sender: id },
+      {
+        text: newMessage,
+        recipient: selectedUserId,
+        sender: id,
+        _id: Date.now()
+      },
     ]);
   }
 
   // Load message with selected user
   useEffect(() => {
     if (selectedUserId) {
-      axios.get("/messages/" + selectedUserId)
+      axios.get("/messages/" + selectedUserId).then((response) => {
+        setMessages(response.data);
+      });
     }
-  }, [selectedUserId])
+  }, [selectedUserId]);
 
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <div className="bg-white w-1/3">
+      <div className="bg-white lg:w-1/4 w-1/3">
         {/* Logo in the sidebar */}
         <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center p-4">
           <svg
@@ -124,7 +136,7 @@ const Chat = () => {
         })}
       </div>
 
-      <div className="bg-blue-100 w-2/3 p-2 flex flex-col">
+      <div className="bg-blue-100 lg:w-3/4 w-2/3 p-2 flex flex-col">
         <div className="flex-grow">
           {!selectedUserId && (
             <div className="text-gray-400 text-xl h-full flex items-center justify-center">
@@ -138,18 +150,16 @@ const Chat = () => {
             <div className="relative h-full">
               <div className="overflow-y-scroll absolute inset-0 bottom-2">
                 {messages.map((m) => (
-                  <div className={m.sender === id ? "text-right" : "text-left"}>
+                  <div key={m._id} className={"mb-2 " + (m.sender === id ? "text-right ml-8" : "text-left mr-8")}>
                     <div
                       className={
-                        "p-2 my-2 inline-block text-left rounded-md " +
+                        "p-2 inline-block text-left rounded-md " +
                         (m.sender === id
                           ? "bg-blue-400 text-white"
                           : "bg-white")
                       }
                     >
-                      {m.text} <br />
-                      {m.sender} <br />
-                      {m.recipient}
+                      <p>{m.text}</p>
                     </div>
                   </div>
                 ))}
