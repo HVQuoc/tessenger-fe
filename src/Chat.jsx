@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./components/Avatar";
 import { UserContext } from "./UserContext";
 import axios from "axios";
@@ -10,6 +10,7 @@ const Chat = () => {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const { username, id } = useContext(UserContext);
+  const messageBoxBottomRef = useRef();
 
   useEffect(() => {
     connectToWs();
@@ -56,6 +57,10 @@ const Chat = () => {
   function sendMessage(ev) {
     ev.preventDefault();
 
+    if (!newMessage) {
+      console.log("Cannot send the empty message string")
+      return
+    }
     // send to ws server
     ws.send(
       JSON.stringify({
@@ -74,10 +79,19 @@ const Chat = () => {
         text: newMessage,
         recipient: selectedUserId,
         sender: id,
-        _id: Date.now()
+        _id: Date.now(),
       },
     ]);
   }
+
+  // Auto scroll to the bottom of the message box with smooth behavior
+  useEffect(() => {
+    const div = messageBoxBottomRef.current;
+    if (div) {
+      div.scrollIntoView({behavior: "smooth", block: "end"})
+
+    }
+  }, [messages]);
 
   // Load message with selected user
   useEffect(() => {
@@ -150,7 +164,13 @@ const Chat = () => {
             <div className="relative h-full">
               <div className="overflow-y-scroll absolute inset-0 bottom-2">
                 {messages.map((m) => (
-                  <div key={m._id} className={"mb-2 " + (m.sender === id ? "text-right ml-8" : "text-left mr-8")}>
+                  <div
+                    key={m._id}
+                    className={
+                      "mb-2 " +
+                      (m.sender === id ? "text-right ml-8" : "text-left mr-8")
+                    }
+                  >
                     <div
                       className={
                         "p-2 inline-block text-left rounded-md " +
@@ -163,6 +183,7 @@ const Chat = () => {
                     </div>
                   </div>
                 ))}
+                <div ref={messageBoxBottomRef}></div>
               </div>
             </div>
           )}
