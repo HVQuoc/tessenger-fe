@@ -2,10 +2,12 @@ import { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./components/Avatar";
 import { UserContext } from "./UserContext";
 import axios from "axios";
+import Contact from "./components/Contact";
 
 const Chat = () => {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
+  const [offlinePeople, setOfflinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -58,8 +60,8 @@ const Chat = () => {
     ev.preventDefault();
 
     if (!newMessage) {
-      console.log("Cannot send the empty message string")
-      return
+      console.log("Cannot send the empty message string");
+      return;
     }
     // send to ws server
     ws.send(
@@ -88,8 +90,7 @@ const Chat = () => {
   useEffect(() => {
     const div = messageBoxBottomRef.current;
     if (div) {
-      div.scrollIntoView({behavior: "smooth", block: "end"})
-
+      div.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages]);
 
@@ -102,6 +103,25 @@ const Chat = () => {
     }
   }, [selectedUserId]);
 
+  // handle the offline people changes
+  useEffect(() => {
+    axios.get("/people").then((res) => {
+      const offlinePeopleArr = res.data
+        .filter((p) => p._id !== id) // exclude the current user
+        .filter((p) => !Object.keys(onlinePeople).includes(p._id)); // exclude online people
+
+      // map the array of offline people to object key:value
+      const offlinePeople = {};
+      offlinePeopleArr.forEach((p) => {
+        offlinePeople[p._id] = p.username;
+      });
+
+      setOfflinePeople(offlinePeople);
+    });
+  }, [onlinePeople]);
+
+  console.log("online: offline", { onlinePeople, offlinePeople });
+
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
@@ -110,7 +130,7 @@ const Chat = () => {
         <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center p-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            fill="none"
+            fill="none  "
             viewBox="0 0 24 24"
             strokeWidth="2"
             stroke="currentColor"
@@ -128,24 +148,26 @@ const Chat = () => {
         {/* Display the list of online people */}
         {Object.keys(onlinePeopleExcludeCurUser).map((userId) => {
           return (
-            <div
-              key={userId}
-              className={
-                "flex items-center gap-2 border-b border-gray-100 cursor-pointer " +
-                (userId === selectedUserId ? "bg-green-100" : "")
-              }
-              onClick={() => setSelectedUserId(userId)}
-            >
-              {/* The online vertical bar */}
-              {userId === selectedUserId && (
-                <div className="w-1 h-12 bg-green-400 rounded-r-md"></div>
-              )}
-              <div className="flex pl-4 gap-2 py-2 items-center">
-                <Avatar userId={userId} username={onlinePeople[userId]} />
-                {/* <div className="w-8 h-8 opacity-60 text-center rounded-full bg-green-200">t</div> */}
-                <span className="text-slate-600">{onlinePeople[userId]}</span>
-              </div>
-            </div>
+            <Contact
+              isOnline={true}
+              userId={userId}
+              username={onlinePeopleExcludeCurUser[userId]}
+              selectedUserId={selectedUserId}
+              onClick={setSelectedUserId}
+            />
+          );
+        })}
+
+        {/* Display the list of offline people */}
+        {Object.keys(offlinePeople).map((userId) => {
+          return (
+            <Contact
+              isOnline={false}
+              userId={userId}
+              username={offlinePeople[userId]}
+              selectedUserId={selectedUserId}
+              onClick={setSelectedUserId}
+            />
           );
         })}
       </div>
