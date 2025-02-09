@@ -88,6 +88,7 @@ const Chat = () => {
 
   function logout() {
     axios.post("/logout").then(() => {
+      setWs(null);
       setId(null);
       setUsername(null);
     });
@@ -178,7 +179,7 @@ const Chat = () => {
           })}
         </div>
         <div className="p-2 mx-2 text-start flex items-center justify-between gap-2">
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-2 items-center">
             <div className="bg-gray-200 p-1 rounded-full overflow-hidden text-gray-600 border">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
