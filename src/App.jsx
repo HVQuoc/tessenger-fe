@@ -3,9 +3,10 @@ import axios from "axios";
 import Register from "./Register";
 import { UserContextProvider } from "./UserContext";
 import Routes from "./Routes";
+import { BE_HTTPS_URL } from "./config/urls";
 
 function App() {
-  axios.defaults.baseURL = "http://localhost:4000";
+  axios.defaults.baseURL = BE_HTTPS_URL;
   axios.defaults.withCredentials = true;
 
   return (

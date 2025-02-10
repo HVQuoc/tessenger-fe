@@ -1,5 +1,4 @@
 import { useContext, useState } from "react";
-import { Link } from "react-router-dom";
 import axios from "axios";
 import { UserContext } from "./UserContext";
 
@@ -113,7 +112,7 @@ const Register = () => {
         </div>
         <button
           className={
-            "bg-blue-600 flex justify-center items-center text-white block w-full mb-4 rounded-xl border p-2 border-slate-400" +
+            "bg-blue-600 flex justify-center items-center text-white w-full mb-4 rounded-xl border p-2 border-slate-400" +
             (isLoading ? " opacity-50" : "")
           }
           disabled={isLoading}

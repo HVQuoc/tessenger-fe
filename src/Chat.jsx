@@ -3,6 +3,7 @@ import { UserContext } from "./UserContext";
 import axios from "axios";
 import Contact from "./components/Contact";
 import Tooltip from "./components/Tooltip";
+import {BE_WSS_URL} from "./config/urls"
 
 const Chat = () => {
   const [ws, setWs] = useState(null);
@@ -11,6 +12,7 @@ const Chat = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [sidebarToggle, setSidebarToggle] = useState(false);
   const { username, id, setId, setUsername } = useContext(UserContext);
   const messageBoxBottomRef = useRef();
 
@@ -19,7 +21,7 @@ const Chat = () => {
   }, []);
 
   function connectToWs() {
-    const newWs = new WebSocket("ws://localhost:4000");
+    const newWs = new WebSocket(BE_WSS_URL);
     setWs(newWs);
     newWs.addEventListener("message", handleMessage);
     newWs.addEventListener("close", () => {
@@ -129,19 +131,19 @@ const Chat = () => {
   }, [onlinePeople]);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative">
       {/* Sidebar */}
-      <div className="bg-white lg:w-1/4 w-1/3 flex flex-col">
-        <div className="flex-grow">
-          {/* Logo in the sidebar */}
-          <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center p-4">
+      <div className={"bg-white flex flex-col justify-between " + (sidebarToggle?"lg:w-1/4 w-2/3 md:1/3": "w-[18%] md:w-[10%] lg:w-[5%]")} >
+        {/* Logo in the sidebar */}
+        <div className="text-blue-400 font-bold text-xl mb-4 flex gap-2 items-center p-4">
+          <span onClick={() => setSidebarToggle(prev => !prev)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none  "
               viewBox="0 0 24 24"
               strokeWidth="2"
               stroke="currentColor"
-              className="size-6"
+              className="size-8"
             >
               <path
                 strokeLinecap="round"
@@ -149,36 +151,43 @@ const Chat = () => {
                 d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z"
               />
             </svg>
-            <span>Tessenger</span>
-          </div>
-
-          {/* Display the list of online people */}
-          {Object.keys(onlinePeopleExcludeCurUser).map((userId) => {
-            return (
-              <Contact
-                isOnline={true}
-                userId={userId}
-                username={onlinePeopleExcludeCurUser[userId]}
-                selectedUserId={selectedUserId}
-                onClick={setSelectedUserId}
-              />
-            );
-          })}
-
-          {/* Display the list of offline people */}
-          {Object.keys(offlinePeople).map((userId) => {
-            return (
-              <Contact
-                isOnline={false}
-                userId={userId}
-                username={offlinePeople[userId]}
-                selectedUserId={selectedUserId}
-                onClick={setSelectedUserId}
-              />
-            );
-          })}
+          </span>
+          <span className={sidebarToggle? "block": "hidden"}>Tessenger</span>
         </div>
-        <div className="p-2 mx-2 text-start flex items-center justify-between gap-2">
+        <div className="relative flex-grow">
+          {/* Scroller wrapper */}
+
+          <div className="inset-0 absolute overflow-y-auto">
+            {/* Display the list of online people */}
+            {Object.keys(onlinePeopleExcludeCurUser).map((userId) => {
+              return (
+                <Contact
+                  key={userId}
+                  isOnline={true}
+                  userId={userId}
+                  username={sidebarToggle?onlinePeopleExcludeCurUser[userId]: onlinePeopleExcludeCurUser[userId][0]}
+                  selectedUserId={selectedUserId}
+                  onClick={setSelectedUserId}
+                />
+              );
+            })}
+
+            {/* Display the list of offline people */}
+            {Object.keys(offlinePeople).map((userId) => {
+              return (
+                <Contact
+                  key={userId}
+                  isOnline={false}
+                  userId={userId}
+                  username={sidebarToggle?offlinePeople[userId]: offlinePeople[userId][0]}
+                  selectedUserId={selectedUserId}
+                  onClick={setSelectedUserId}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div className={"p-2 mx-2 text-start flex justify-between gap-2 " + (sidebarToggle?"":"flex-col")}>
           <div className="flex gap-2 items-center">
             <div className="bg-gray-200 p-1 rounded-full overflow-hidden text-gray-600 border">
               <svg
@@ -196,7 +205,8 @@ const Chat = () => {
                 />
               </svg>
             </div>
-            <span>{username}</span>
+            {sidebarToggle && (<span>{username}</span>)}
+            
           </div>
           <Tooltip text={"Logout"}>
             <button
@@ -222,7 +232,7 @@ const Chat = () => {
         </div>
       </div>
 
-      <div className="bg-blue-100 lg:w-3/4 w-2/3 p-2 flex flex-col">
+      <div className={"bg-blue-100 p-2 flex flex-col " + (sidebarToggle? "lg:w-3/4 md:w-2/3 w-1/3": "w-full")}>
         <div className="flex-grow">
           {!selectedUserId && (
             <div className="text-gray-400 text-xl h-full flex items-center justify-center">
