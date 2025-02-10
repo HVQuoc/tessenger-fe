@@ -22,7 +22,7 @@ const Register = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(url, { username, password });
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setLoggedInUsername(username);
         setId(response.data.id);
       } else {
